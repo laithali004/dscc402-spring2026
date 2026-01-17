@@ -10,6 +10,12 @@ Build a complete end-to-end data pipeline that ingests tweets, applies ML-based 
 
 ---
 
+## Pipeline Architecture
+
+![Tweet Pipeline Architecture](tweet%20pipeline%20architecture.jpeg)
+
+---
+
 ## Learning Objectives
 
 Demonstrate mastery of:
