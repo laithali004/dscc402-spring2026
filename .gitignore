@@ -297,6 +297,7 @@ experiments/
 quizzes/
 solutions/
 slides/
+grading/
 
 # Test data created during labs
 test_data/
