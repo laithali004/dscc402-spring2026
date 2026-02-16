@@ -137,7 +137,7 @@ print("✅ Verification utilities loaded")
 
 from pyspark.sql.functions import col
 
-transactions_df =
+transactions_df = spark.table("samples.bakehouse.sales_transactions")
 
 # Apply multiple filters (some redundant)
 slow_query_df = (transactions_df
@@ -175,7 +175,7 @@ print("📝 Note: Look at the 'Optimized Logical Plan' - Catalyst consolidated t
 
 (transactions_df
  .write
- .partitionBy(  )  # Which column to partition by?
+ .partitionBy("franchiseID" )  # Which column to partition by?
  .format("delta")
  .mode("overwrite")
  .save(f"{working_dir}/transactions_partitioned")
@@ -184,7 +184,7 @@ print("📝 Note: Look at the 'Optimized Logical Plan' - Catalyst consolidated t
 # Read with filter - Spark will only read relevant partitions
 filtered_df = spark.read.format("delta").load(
     f"{working_dir}/transactions_partitioned"
-).filter(  )  # Filter condition: col("franchiseID") == 3000033
+).filter(col("franchiseID")==3000033 )  # Filter condition: col("franchiseID") == 3000033
 
 # Display the execution plan
 filtered_df.explain(True)
