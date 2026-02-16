@@ -309,7 +309,7 @@ print("📝 Note: repartition() triggers a full shuffle but ensures even distrib
 # Load the repartitioned data from Task 2.1
 base_df = spark.read.format("delta").load(f"{working_dir}/repartitioned_demo")
 
-coalesced_df = base_df.
+coalesced_df = base_df.coalesce(2)
 
 # Write and verify
 (coalesced_df
