@@ -460,7 +460,7 @@ dups_df = spark.read.format("delta").load(f"{working_dir}/customers_with_duplica
 # Use dropDuplicates() on key columns: customerID, first_name, last_name, email_address
 # Pass columns as a list
 
-simple_dedup_df = dups_df.dropDuplicates(  )  # List of column names
+simple_dedup_df = dups_df.dropDuplicates( ["customerID", "first_name", "last_name", "email_address"] )  # List of column names
 
 print(f"Original: {dups_df.count():,}")
 print(f"After simple dedup: {simple_dedup_df.count():,}")
