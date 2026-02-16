@@ -408,12 +408,17 @@ duplicates_df = (base_customers_df
     # TODO: Add case variations to last_name
     # Use when(col("duplicate_id") % 2 == 0, ...) to uppercase some last names
     .withColumn("last_name",
+                when(col("duplicate_id") % 2 == 0, upper(col("last_name")))
+                .otherwise(col("last_name"))
+                
           # when(condition, upper(col("last_name"))).otherwise(col("last_name"))
     )
 
     # TODO: Add variations to email (some uppercase domain)
     # Use when(col("duplicate_id") % 4 == 0, ...) to uppercase some emails
     .withColumn("email_address",
+                when(col("duplicate_id") % 4 == 0, upper(col("email_address")))
+                .otherwise(col("email_address"))
           # when(condition, upper(col("email_address"))).otherwise(col("email_address"))
     )
 
