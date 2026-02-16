@@ -269,7 +269,7 @@ print(f"📊 Efficiency gain: Reduced franchise table from {franchises_df.count(
 # TODO: Repartition to 8 partitions
 # Use .repartition(8) method on transactions_df
 
-repartitioned_df = transactions_df.
+repartitioned_df = transactions_df.repartition(8)
 
 # Write to verify partition count through file output
 (repartitioned_df
