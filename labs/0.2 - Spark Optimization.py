@@ -539,6 +539,8 @@ standardized_df = (dups_df
     # Normalize phone numbers (remove dashes, spaces, parentheses)
     .withColumn("cleanPhone",
         regexp_replace(regexp_replace(col("phone_number"), "[^0-9]", ""), " ", ""))
+    .withColumn("postal_zip_code", trim(col("postal_zip_code")))
+    .withColumn("gender", translate(col("gender"), "Mm", "M"))
 )
 
 # Dedup including standardized fields
