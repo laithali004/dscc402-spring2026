@@ -492,16 +492,16 @@ print("✅ Task 3.2 complete: Simple deduplication attempted")
 from pyspark.sql.functions import lower
 
 normalized_df = (dups_df
-    .withColumn("lcFirstName", lower(col(  )))  # Lowercase which column?
-    .withColumn("lcLastName",  )  # lower(col("last_name"))
-    .withColumn("lcEmail",  )  # lower(col("email_address"))
+    .withColumn("lcFirstName", lower(col( "first_name" )))  # Lowercase which column?
+    .withColumn("lcLastName", lower(col( "last_name" )))  # lower(col("last_name"))
+    .withColumn("lcEmail", lower(col( "email_address")))  # lower(col("email_address"))
 )
 
 # Drop duplicates based on normalized columns
-deduped_df = normalized_df.dropDuplicates(  )  # List: ["lcFirstName", "lcLastName", "lcEmail"]
+deduped_df = normalized_df.dropDuplicates( ["lcFirstName", "lcLastName", "lcEmail"] )  # List: ["lcFirstName", "lcLastName", "lcEmail"]
 
 # Clean up temporary columns
-final_df = deduped_df.drop(  )  # Drop lcFirstName, lcLastName, lcEmail
+final_df = deduped_df.drop( "lcFirstName", "lcLastName", "lcEmail" )  # Drop lcFirstName, lcLastName, lcEmail
 
 print(f"After case-insensitive dedup: {final_df.count():,}")
 print(f"Additional duplicates removed: {simple_dedup_df.count() - final_df.count():,}")
