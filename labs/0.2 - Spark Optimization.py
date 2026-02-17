@@ -575,7 +575,7 @@ print("📝 Standardization catches duplicates with formatting differences")
 # Use .repartition(1) to create a single output file
 
 (final_standardized_df
- .repartition(  )  # How many partitions for single file?
+ .repartition(1)  # How many partitions for single file?
  .write
  .mode("overwrite")
  .format("delta")
