@@ -199,6 +199,8 @@ print("✅ Task 1.3 complete: Payment methods identified")
 # Expected result: One row with average value around $15-25
 
 avg_value_df = spark.sql("""
+                         SELECT ROUND(AVG(totalPrice), 2) AS avg_transaction_value
+                         FROM samples.bakehouse.sales_transactions
 
 
 """)
