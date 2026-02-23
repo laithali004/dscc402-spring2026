@@ -239,9 +239,9 @@ print(f"✅ Task 1.4 complete: Average transaction value = ${avg_value:.2f}")
 # - samples.bakehouse.sales_transactions → transactions_df
 # - samples.bakehouse.sales_customers → customers_df
 
-transactions_df =
+transactions_df = spark.table("samples.bakehouse.sales_transactions")
 
-customers_df =
+customers_df = spark.table("samples.bakehouse.sales_customers")
 
 # COMMAND ----------
 
