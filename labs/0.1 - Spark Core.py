@@ -134,7 +134,8 @@ print("✅ Verification utilities loaded")
 # Expected result: One row with count = 3333
 
 transaction_count_df = spark.sql("""
-
+                                 SELECT COUNT(*)
+                                 FROM samples.bakehouse.sales_transactions
 
 
 """)
@@ -164,6 +165,9 @@ print("✅ Task 1.2 complete: Transaction count verified")
 # Expected result: Multiple rows with payment method names
 
 payment_methods_df = spark.sql("""
+                               SELECT  DISTINCT paymentMethod
+                               FROM samples.bakehouse.sales_transactions
+                               ORDER BY paymentMethod
 
 
 
