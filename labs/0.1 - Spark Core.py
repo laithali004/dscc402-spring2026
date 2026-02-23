@@ -261,6 +261,7 @@ print("✅ Task 2.1 complete: DataFrames created")
 
 # TODO: Display the schema of transactions_df
 # Call the printSchema() method on the DataFrame
+transactions_df.printSchema()
 
 
 
@@ -281,8 +282,8 @@ print("✅ Task 2.1 complete: DataFrames created")
 from pyspark.sql.functions import desc
 
 high_value_df = (transactions_df
-    .filter(  )  # Your filter condition here
-    .orderBy(  )  # Your sort expression here
+    .filter(col("totalPrice")>50)  # Your filter condition here
+    .orderBy(("totalPrice"))  # Your sort expression here
 )
 
 display(high_value_df)
