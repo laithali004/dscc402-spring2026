@@ -649,6 +649,7 @@ print("✅ Task 5.3 complete: Top 3 franchises identified")
 
 # COMMAND ----------
 
+# DBTITLE 1,Untitled
 # TODO: Extract date components from dateTime column
 # Use year(), month(), dayofmonth(), hour() functions
 # All functions should reference col("dateTime")
@@ -656,10 +657,10 @@ print("✅ Task 5.3 complete: Top 3 franchises identified")
 from pyspark.sql.functions import year, month, dayofmonth, hour, date_format
 
 transactions_with_dates_df = (transactions_df
-    .withColumn("year", year(col(  )))  # Extract year from which column?
-    .withColumn("month",  )  # Use month() function
-    .withColumn("day",  )  # Use dayofmonth() function
-    .withColumn("hour",  )  # Use hour() function
+    .withColumn("year", year(col("dateTime")))  # Extract year from which column?
+    .withColumn("month", month(col("dateTime")))  # Use month() function
+    .withColumn("day",dayofmonth(col("dateTime")))  # Use dayofmonth() function
+    .withColumn("hour",hour(col("dateTime")) )  # Use hour() function
 )
 
 display(transactions_with_dates_df)
@@ -691,10 +692,10 @@ print("✅ Task 6.1 complete: Date components extracted")
 from pyspark.sql.functions import approx_count_distinct, to_date
 
 daily_customers_df = (transactions_df
-    .withColumn("transaction_date", to_date(col(  )))  # Which datetime column?
-    .groupBy(  )  # Group by which column?
-    .agg(approx_count_distinct(  ).alias("active_customers"))  # Count distinct which column?
-    .orderBy(  )  # Sort by which column?
+    .withColumn("transaction_date", to_date(col("dateTime")))  # Which datetime column?
+    .groupBy("transaction_date")  # Group by which column?
+    .agg(approx_count_distinct("customerID").alias("active_customers"))  # Count distinct which column?
+    .orderBy("transaction_date")  # Sort by which column?
 )
 
 display(daily_customers_df)
@@ -725,10 +726,10 @@ print("✅ Task 6.2 complete: Daily active customers calculated")
 from pyspark.sql.functions import dayofweek
 
 revenue_by_dow_df = (transactions_df
-    .withColumn("day_of_week", date_format(col(  ),  ))  # Format pattern: "E" for day name
-    .groupBy(  )  # Group by which column?
-    .agg(sum(  ).alias("total_revenue"))  # Sum which column?
-    .orderBy(  )  # Sort by revenue descending
+    .withColumn("day_of_week", date_format(col("dateTime"), "E"))  # Format pattern: "E" for day name
+    .groupBy("day_of_week")  # Group by which column?
+    .agg(sum(col("totalPrice")).alias("total_revenue"))  # Sum which column?
+    .orderBy("total_revenue", ascending=False)  # Sort by revenue descending
 )
 
 display(revenue_by_dow_df)
