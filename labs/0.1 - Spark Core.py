@@ -770,7 +770,7 @@ reviews_df = spark.table("samples.bakehouse.media_customer_reviews")
 
 reviews_with_words_df = reviews_df.withColumn(
     "review_words",
-    split(col(  ), " ")  # Which column to split?
+    split(col("review"), " ")  # Which column to split?
 )
 
 display(reviews_with_words_df)
@@ -799,8 +799,8 @@ print("✅ Task 7.1 complete: Review text split into word arrays")
 from pyspark.sql.functions import collect_set
 
 customer_products_df = (transactions_df
-    .groupBy(  )  # Group by which column?
-    .agg(collect_set(  ).alias("products_purchased"))  # Collect which column?
+    .groupBy("customerID")  # Group by which column?
+    .agg(collect_set(col("product")).alias("products_purchased"))  # Collect which column?
 )
 
 display(customer_products_df)
@@ -829,7 +829,7 @@ from pyspark.sql.functions import size
 
 customer_product_count_df = customer_products_df.withColumn(
     "product_count",
-    size(col(  ))  # Get size of which array column?
+    size(col("products_purchased"))  # Get size of which array column?
 )
 
 display(customer_product_count_df)
@@ -859,7 +859,7 @@ from pyspark.sql.functions import explode
 exploded_words_df = reviews_with_words_df.select(
     "franchiseID",
     "review_date",
-    explode(col(  )).alias("word")  # Explode which array column?
+    explode(col("review_words")).alias("word")  # Explode which array column?
 )
 
 display(exploded_words_df.limit(50))
@@ -897,8 +897,10 @@ print("✅ Task 7.4 complete: Array elements exploded")
 transactions_with_customers_df = (transactions_df
     .join(
         customers_df,
-          # Join condition here
-          # Join type: "inner", "left", etc.
+        # Join condition here
+        # Join type: "inner", "left", etc.
+          transactions_df["customerID"] == customers_df["customerID"],
+          "inner"
     )
     .select(
         transactions_df["*"],
@@ -936,6 +938,7 @@ full_transaction_df = (transactions_with_customers_df
     .join(
         franchises_df,
           # Join condition on franchiseID
+          transactions_with_customers_df["franchiseID"] == franchises_df["franchiseID"],
         "inner"
     )
     .select(
@@ -973,6 +976,7 @@ customers_without_reviews_df = (customers_df
         reviews_df,
         customers_df["customerID"] == reviews_df["franchiseID"],  # Note: This is a simplified join
           # Join type: use "left" to keep all customers
+          "left"
     )
     .filter(col("review_date").isNull())
     .select(customers_df["*"])
@@ -1003,7 +1007,7 @@ print(f"✅ Task 8.3 complete: Found {customers_without_reviews_df.count()} cust
 from pyspark.sql.functions import coalesce, lit
 
 franchises_cleaned_df = franchises_df.na.fill(
-    {"size":  }  # What value to fill nulls with?
+    {"size":  "Unknown"}  # What value to fill nulls with?
 )
 
 display(franchises_cleaned_df)
