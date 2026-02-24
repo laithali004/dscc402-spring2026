@@ -313,7 +313,10 @@ print(f"✅ Task 2.3 complete: Found {high_value_df.count()} high-value transact
 # Pass column names as strings to the select() method
 
 customer_summary_df = customers_df.select(
-
+    col("customerID"),
+    col("first_name"),
+    col("last_name"),
+    col("city")
 
 )
 
@@ -374,9 +377,10 @@ from pyspark.sql.types import StructType, StructField, LongType, StringType, Dou
 # Syntax: StructField("column_name", DataType(), nullable)
 
 franchise_schema = StructType([
-
-
-
+    StructField("franchiseID", LongType(), True),
+    StructField("name", StringType(), True),
+    StructField("city", StringType(), True),
+    StructField("country", StringType(), True)
 ])
 
 # COMMAND ----------
@@ -392,12 +396,12 @@ franchise_schema = StructType([
 # 1. Filter where paymentMethod column equals "visa"
 # 2. Specify format as "delta" for Delta Lake format
 
-visa_transactions_df = transactions_df.filter(  )
+visa_transactions_df = transactions_df.filter(col("paymentMethod") == "visa")
 
 (visa_transactions_df
     .write
     .mode("overwrite")
-    .format(  )  # Specify Delta format
+    .format("delta")  # Specify Delta format
     .save(f"{working_dir}/visa_transactions")
 )
 
@@ -423,7 +427,7 @@ print("✅ Task 3.3 complete: Data written to Delta format")
 
 read_visa_df = (spark
     .read
-    .format(  )  # Specify Delta format
+    .format("delta")  # Specify Delta format
     .load(f"{working_dir}/visa_transactions")
 )
 
@@ -462,7 +466,7 @@ from pyspark.sql.functions import col
 
 transactions_with_discount_df = transactions_df.withColumn(
     "discount_per_unit",
-      # Your calculation here: col("unitPrice") - (col("totalPrice") / col("quantity"))
+    col("unitPrice") - (col("totalPrice") / col("quantity"))
 )
 
 display(transactions_with_discount_df)
@@ -487,7 +491,7 @@ print("✅ Task 4.1 complete: Discount calculation added")
 # Use col("paymentMethod").contains("amex") or col("paymentMethod").like("%amex%")
 
 credit_card_df = transactions_with_discount_df.filter(
-      # Your filter condition here
+      col("paymentMethod").like("%amex%")
 )
 
 display(credit_card_df)
@@ -515,9 +519,9 @@ print(f"✅ Task 4.2 complete: {credit_card_df.count()} credit card transactions
 # Step 3: Sort by revenue descending (use orderBy with desc)
 
 chained_df = (transactions_df
-    .withColumn("revenue",  )  # Calculate: col("quantity") * col("unitPrice")
-    .filter(  )  # Filter condition: col("revenue") > 30
-    .orderBy(  )  # Sort expression: desc("revenue")
+    .withColumn("revenue", col("quantity") * col("unitPrice")  )  # Calculate: col("quantity") * col("unitPrice")
+    .filter( col("revenue") > 30)  # Filter condition: col("revenue") > 30
+    .orderBy("revenue")  # Sort expression: desc("revenue")
 )
 
 display(chained_df)
