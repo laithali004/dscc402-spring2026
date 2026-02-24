@@ -562,9 +562,9 @@ print("✅ Task 4.3 complete: Method chaining successful")
 from pyspark.sql.functions import sum, avg, round as spark_round
 
 revenue_by_franchise_df = (transactions_df
-    .groupBy(  )  # Which column to group by?
-    .agg(sum(  ).alias("total_revenue"))  # Sum which column?
-    .orderBy(  )  # Sort by which column, descending?
+    .groupBy("franchiseID")  # Which column to group by?
+    .agg(sum( "totalPrice").alias("total_revenue"))  # Sum which column?
+    .orderBy("total_revenue", ascending= False)  # Sort by which column, descending?
 )
 
 display(revenue_by_franchise_df)
@@ -593,9 +593,9 @@ print("✅ Task 5.1 complete: Franchise revenue calculated")
 # 3. Order by "avg_transaction_value" descending
 
 avg_transaction_by_franchise_df = (transactions_df
-    .groupBy(  )  # Group by franchiseID
-    .agg(spark_round(avg(  ), 2).alias("avg_transaction_value"))  # Avg which column?
-    .orderBy(  )  # Sort by avg_transaction_value descending
+    .groupBy("franchiseID")  # Group by franchiseID
+    .agg(spark_round(avg("totalPrice"), 2).alias("avg_transaction_value"))  # Avg which column?
+    .orderBy( "avg_transaction_value", ascending= False)  # Sort by avg_transaction_value descending
 )
 
 display(avg_transaction_by_franchise_df)
@@ -620,7 +620,7 @@ print("✅ Task 5.2 complete: Average transaction value calculated")
 # TODO: Get top 3 franchises
 # Use .limit(3) method on revenue_by_franchise_df
 
-top_3_franchises_df = revenue_by_franchise_df.
+top_3_franchises_df = revenue_by_franchise_df.limit(3)
 
 display(top_3_franchises_df)
 
