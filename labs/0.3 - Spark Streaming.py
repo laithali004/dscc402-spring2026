@@ -235,18 +235,18 @@ print("✅ Task 1.1 complete: Streaming source data prepared")
 # 2. Write stream: format="delta", outputMode="append", checkpoint, trigger, start path
 
 streaming_df = (spark.readStream
-    .format(  )  # Delta format
-    .load(  )  # Path to streaming_source
+    .format("delta")  # Delta format
+    .load(f"{working_dir}/streaming_source")  # Path to streaming_source
 )
 
 # Write streaming data to test location
 test_query = (streaming_df
     .writeStream
-    .format(  )  # Delta format
-    .outputMode(  )  # "append" for non-aggregated data
-    .option("checkpointLocation",  )  # Checkpoint path: f"{checkpoint_dir}/test_stream"
-    .trigger(  )  # availableNow=True for Free Edition
-    .start(  )  # Output path: f"{working_dir}/test_stream"
+    .format("delta")  # Delta format
+    .outputMode("append")  # "append" for non-aggregated data
+    .option("checkpointLocation", f"{checkpoint_dir}/test_stream")  # Checkpoint path: f"{checkpoint_dir}/test_stream"
+    .trigger(availableNow=True)  # availableNow=True for Free Edition
+    .start(f"{working_dir}/test_stream")  # Output path: f"{working_dir}/test_stream"
 )
 
 # Wait for processing to complete
@@ -285,11 +285,11 @@ print("📝 Note: In Free Edition, we write streams and verify outputs by readin
 
 query = (streaming_df
     .writeStream
-    .format(  )  # Delta format
-    .outputMode(  )  # "append" for non-aggregated data
-    .option("checkpointLocation",  )  # f"{checkpoint_dir}/real_time_sales"
-    .trigger(  )  # availableNow=True for Free Edition
-    .start(  )  # f"{working_dir}/real_time_sales"
+    .format("delta")  # Delta format
+    .outputMode("append")  # "append" for non-aggregated data
+    .option("checkpointLocation", f"{checkpoint_dir}/real_time_sales")  # f"{checkpoint_dir}/real_time_sales"
+    .trigger(availableNow=True)  # availableNow=True for Free Edition
+    .start(f"{working_dir}/real_time_sales")  # f"{working_dir}/real_time_sales"
 )
 
 # Wait for all data to be processed
@@ -337,9 +337,9 @@ monitor_query = (spark.readStream
 # TODO: Access query properties
 # Use monitor_query.id, monitor_query.isActive, monitor_query.status
 
-print(f"Query ID: {  }")  # Get query ID
-print(f"Is Active: {  }")  # Check if query is active
-print(f"Status: {  }")  # Get query status
+print(f"Query ID: {monitor_query.id}")  # Get query ID
+print(f"Is Active: {query.isActive}")  # Check if query is active
+print(f"Status: {monitor_query.status}")  # Get query status
 
 # List all active queries
 print(f"\nAll active queries: {len(spark.streams.active)}")
