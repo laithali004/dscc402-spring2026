@@ -394,7 +394,7 @@ from pyspark.sql.functions import window, sum, count, avg
 streaming_df = (spark.readStream
     .format("delta")
     .load(f"{working_dir}/streaming_source")
-    .withWatermark(  ,  )  # Column name and interval
+    .withWatermark("dateTime", "10 minutes" )  # Column name and interval
 )
 
 print("✅ Streaming DataFrame with watermark created")
@@ -418,30 +418,31 @@ print("📝 Watermarks balance between waiting for late data and finalizing resu
 
 # COMMAND ----------
 
+# DBTITLE 1,Untitled
 # TODO: Aggregate streaming data by hour and write to Delta
 # Use window() function to create 1-hour time buckets
 # Group by window and franchiseID, then calculate aggregations
 
 hourly_sales_df = (streaming_df
     .groupBy(
-        window(col(  ), "  "),  # Column name and window duration
-        col(  )  # Franchise column for grouping
+        window(col("dateTime"), "1 hour"),  # Column name and window duration
+        col("franchiseID")  # Franchise column for grouping
     )
     .agg(
-        sum(  ).alias("total_sales"),  # Column to sum
-        count(  ).alias("transaction_count"),  # Column to count
-        avg(  ).alias("avg_transaction_value")  # Column to average
+        sum("totalPrice" ).alias("total_sales"),  # Column to sum
+        count("*").alias("transaction_count"),  # Column to count
+        avg("totalPrice").alias("avg_transaction_value")  # Column to average
     )
 )
 
 # Write the aggregated stream to Delta
 hourly_query = (hourly_sales_df
     .writeStream
-    .format(  )  # Delta format
-    .outputMode(  )  # Output mode for windowed aggregations
-    .option("checkpointLocation",  )  # Checkpoint path
-    .trigger(  )  # Trigger type
-    .start(  )  # Output path
+    .format("delta")  # Delta format
+    .outputMode("append")  # Output mode for windowed aggregations
+    .option("checkpointLocation", f"{checkpoint_dir}/hourly_verification" )  # Checkpoint path
+    .trigger(availableNow=True )  # Trigger type
+    .start(f"{working_dir}/hourly_verification")  # Output path
 )
 
 # Wait for processing to complete
@@ -476,11 +477,11 @@ print("📝 The window column contains the start/end time of each hourly bucket"
 
 query = (hourly_sales_df
     .writeStream
-    .format(  )  # Delta format
-    .outputMode(  )  # Append mode
-    .option("checkpointLocation",  )  # Checkpoint path
-    .trigger(  )  # availableNow=True
-    .start(  )  # Output path for hourly_sales
+    .format("delta")  # Delta format
+    .outputMode( "append")  # Append mode
+    .option("checkpointLocation",  f"{checkpoint_dir}/hourly_sales")  # Checkpoint path
+    .trigger(availableNow=True)  # availableNow=True
+    .start(f"{working_dir}/hourly_sales")  # Output path for hourly_sales
 )
 
 # Process all available data
@@ -513,8 +514,8 @@ print(f"✅ Task 2.3 complete: Wrote {hourly_results.count()} hourly aggregation
 from pyspark.sql.functions import desc
 
 peak_hours_df = (spark.read
-    .format(  )  # Delta format
-    .load(  )  # Path to hourly_sales output
+    .format("delta")  # Delta format
+    .load(f"{working_dir}/hourly_sales")  # Path to hourly_sales output
     .select(
         col("window.start").alias("hour_start"),
         col("window.end").alias("hour_end"),
@@ -523,7 +524,7 @@ peak_hours_df = (spark.read
         col("transaction_count"),
         col("avg_transaction_value")
     )
-    .orderBy(  )  # Sort by total_sales descending
+    .orderBy(desc("total_sales"))  # Sort by total_sales descending
 )
 
 display(peak_hours_df)
