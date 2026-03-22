@@ -154,7 +154,7 @@ dbutils.fs.mkdirs(checkpoint_dir)
 from pyspark.sql.functions import col
 
 # Load taxi trips
-trips_df = spark.table(  )  # Table name from samples catalog
+trips_df = spark.table('samples.nyctaxi.trips')  # Table name from samples catalog
 
 print(f"Loaded {trips_df.count():,} taxi trips")
 display(trips_df.limit(10))
@@ -162,8 +162,8 @@ display(trips_df.limit(10))
 # Write to Delta format
 (trips_df
  .write
- .format(  )  # Delta format
- .mode(  )  # Write mode
+ .format("delta")  # Delta format
+ .mode("overwrite")  # Write mode
  .save(f"{working_dir}/taxi_trips_delta")
 )
 
@@ -200,10 +200,10 @@ base_df = spark.read.format("delta").load(f"{working_dir}/taxi_trips_delta")
 # Add calculated columns
 enhanced_df = base_df.withColumn(
     "trip_duration_minutes",
-    round((unix_timestamp(col(  )) - unix_timestamp(col(  ))) / 60, 2)  # Dropoff and pickup columns
+    round((unix_timestamp(col("tpep_dropoff_datetime")) - unix_timestamp(col("tpep_pickup_datetime"))) / 60, 2)  # Dropoff and pickup columns
 ).withColumn(
     "avg_speed_mph",
-    round(try_divide(col(  ), col(  ) / 60), 2)  # Distance and duration columns
+    round(try_divide(col("trip_distance"), col("trip_duration_minutes") / 60), 2)  # Distance and duration columns
 )
 
 print("Enhanced schema:")
@@ -219,9 +219,9 @@ except Exception as e:
 # Now enable schema evolution
 (enhanced_df
  .write
- .format(  )  # Delta format
- .mode(  )  # Append mode
- .option(  ,  )  # Option name and value for schema merging
+ .format("delta")  # Delta format
+ .mode("append")  # Append mode
+ .option("mergeSchema", "true" )  # Option name and value for schema merging
  .save(f"{working_dir}/taxi_trips_delta")
 )
 
@@ -258,7 +258,7 @@ current_df = spark.read.format("delta").load(f"{working_dir}/taxi_trips_delta")
 # Remove duplicates and cast fare_amount
 transformed_df = (current_df
     .dropDuplicates(["tpep_pickup_datetime", "pickup_zip", "dropoff_zip"])
-    .withColumn("fare_amount", col("fare_amount").cast(  ))  # Cast to DecimalType
+    .withColumn("fare_amount", col("fare_amount").cast(DecimalType(10, 2)))  # Cast to DecimalType
 )
 
 print("Transformed schema:")
@@ -267,9 +267,9 @@ transformed_df.printSchema()
 # Overwrite with schema change
 (transformed_df
  .write
- .format(  )  # Delta format
- .mode(  )  # Overwrite mode
- .option(  ,  )  # Option for schema overwrite
+ .format("delta")  # Delta format
+ .mode("overwrite")  # Overwrite mode
+ .option("overwriteSchema","true"  )  # Option for schema overwrite
  .save(f"{working_dir}/taxi_trips_delta")
 )
 
@@ -308,7 +308,7 @@ print("✅ Task 1.3 complete: Breaking schema change applied")
 # MAGIC -- TODO: View complete table history
 # MAGIC -- Replace with the path to your Delta table
 # MAGIC
-# MAGIC DESCRIBE HISTORY delta.`  `
+# MAGIC DESCRIBE HISTORY delta.`/Volumes/nyctaxi_catalog/analytics/workspace/taxi_trips_delta`
 
 # COMMAND ----------
 
@@ -320,13 +320,13 @@ print("✅ Task 1.3 complete: Breaking schema change applied")
 # MAGIC %sql
 # MAGIC -- TODO: Query Version 0 (original data, no calculated columns)
 # MAGIC -- Use VERSION AS OF to query a specific version
-# MAGIC SELECT * FROM delta.`  ` VERSION AS OF   LIMIT 10
+# MAGIC SELECT * FROM delta.`/Volumes/nyctaxi_catalog/analytics/workspace/taxi_trips_delta` VERSION AS OF 0 LIMIT 10
 
 # COMMAND ----------
 
 # MAGIC %sql
 # MAGIC -- TODO: Query current version (with calculated columns and DECIMAL fare_amount)
-# MAGIC SELECT * FROM delta.`  ` LIMIT 10
+# MAGIC SELECT * FROM delta.`/Volumes/nyctaxi_catalog/analytics/workspace/taxi_trips_delta` LIMIT 10
 
 # COMMAND ----------
 
@@ -337,7 +337,7 @@ print("✅ Task 1.3 complete: Breaking schema change applied")
 # MAGIC     'Version 0' AS version,
 # MAGIC     COUNT(*) AS trip_count,
 # MAGIC     AVG(fare_amount) AS avg_fare
-# MAGIC FROM delta.`  ` VERSION AS OF
+# MAGIC FROM delta.`/Volumes/nyctaxi_catalog/analytics/workspace/taxi_trips_delta` VERSION AS OF 0
 # MAGIC
 # MAGIC UNION ALL
 # MAGIC
@@ -345,7 +345,7 @@ print("✅ Task 1.3 complete: Breaking schema change applied")
 # MAGIC     'Current' AS version,
 # MAGIC     COUNT(*) AS trip_count,
 # MAGIC     AVG(CAST(fare_amount AS DOUBLE)) AS avg_fare
-# MAGIC FROM delta.`  `
+# MAGIC FROM delta.`/Volumes/nyctaxi_catalog/analytics/workspace/taxi_trips_delta`
 
 # COMMAND ----------
 
