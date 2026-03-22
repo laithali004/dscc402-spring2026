@@ -394,9 +394,9 @@ print("✅ Task 1.4 complete: Time travel and table history explored")
 # MAGIC -- Conditions: pickup_zip = 10001 AND hour between 17-19 (5PM-7PM)
 # MAGIC -- Action: Increase fare by 10% (fare * 1.10)
 # MAGIC
-# MAGIC UPDATE
-# MAGIC SET
-# MAGIC WHERE
+# MAGIC UPDATE delta.`/Volumes/nyctaxi_catalog/analytics/workspace/taxi_trips_delta` 
+# MAGIC SET fare_amount = fare_amount * 1.10
+# MAGIC WHERE pickup_zip = 10001 AND hour(tpep_pickup_datetime) BETWEEN 17 AND 19
 
 # COMMAND ----------
 
@@ -457,8 +457,8 @@ print("✅ Task 2.1 complete: Surge pricing applied")
 # MAGIC -- TODO: Delete invalid trips
 # MAGIC -- Conditions: fare_amount <= 0 OR trip_distance < 0 OR trip_duration_minutes <= 0
 # MAGIC
-# MAGIC DELETE FROM
-# MAGIC WHERE  ;
+# MAGIC DELETE FROM delta.`/Volumes/nyctaxi_catalog/analytics/workspace/taxi_trips_delta`
+# MAGIC WHERE fare_amount <= 0 OR trip_distance < 0 OR trip_duration_minutes <= 0 ;
 
 # COMMAND ----------
 
@@ -538,13 +538,16 @@ all_corrections_df.createOrReplaceTempView("trip_corrections")
 # MAGIC -- When matched: UPDATE fare_amount
 # MAGIC -- When not matched: INSERT all columns
 # MAGIC
-# MAGIC MERGE INTO   AS target
+# MAGIC MERGE INTO delta.`/Volumes/nyctaxi_catalog/analytics/workspace/taxi_trips_delta` AS target
 # MAGIC USING trip_corrections AS source
-# MAGIC ON
+# MAGIC ON target.tpep_pickup_datetime = source.tpep_pickup_datetime AND
+# MAGIC               target.tpep_dropoff_datetime = source.tpep_dropoff_datetime AND
+# MAGIC               target.pickup_zip = source.pickup_zip
 # MAGIC WHEN MATCHED THEN
-# MAGIC     UPDATE SET
+# MAGIC     UPDATE SET fare_amount = source.fare_amount
 # MAGIC WHEN NOT MATCHED THEN
-# MAGIC     INSERT
+# MAGIC     INSERT (tpep_pickup_datetime, tpep_dropoff_datetime, trip_distance, fare_amount, pickup_zip, dropoff_zip, trip_duration_minutes, avg_speed_mph)
+# MAGIC     VALUES (source.tpep_pickup_datetime, source.tpep_dropoff_datetime, source.trip_distance, source.fare_amount, source.pickup_zip, source.dropoff_zip, source.trip_duration_minutes, source.avg_speed_mph)
 
 # COMMAND ----------
 
@@ -579,8 +582,8 @@ print("✅ Task 2.3 complete: Daily corrections merged")
 # MAGIC %sql
 # MAGIC -- TODO: Compact files and Z-order by pickup_zip
 # MAGIC
-# MAGIC OPTIMIZE
-# MAGIC ZORDER BY (  );
+# MAGIC OPTIMIZE delta.`/Volumes/nyctaxi_catalog/analytics/workspace/taxi_trips_delta`
+# MAGIC ZORDER BY (pickup_zip);
 
 # COMMAND ----------
 
@@ -608,7 +611,7 @@ print("✅ Task 2.4 complete: Table optimized with Z-ordering")
 # MAGIC -- TODO: Preview files that will be deleted (DRY RUN)
 # MAGIC -- Note: 168 hours (7 days) is the minimum retention period
 # MAGIC
-# MAGIC VACUUM   RETAIN 168 HOURS DRY RUN;
+# MAGIC VACUUM delta.`/Volumes/nyctaxi_catalog/analytics/workspace/taxi_trips_delta` RETAIN 168 HOURS DRY RUN;
 
 # COMMAND ----------
 
@@ -616,7 +619,7 @@ print("✅ Task 2.4 complete: Table optimized with Z-ordering")
 # MAGIC -- TODO: Execute vacuum (permanently delete old files)
 # MAGIC -- Note: Files older than 168 hours (7 days) will be deleted
 # MAGIC
-# MAGIC VACUUM   RETAIN 168 HOURS;
+# MAGIC VACUUM delta.`/Volumes/nyctaxi_catalog/analytics/workspace/taxi_trips_delta` RETAIN 168 HOURS;
 
 # COMMAND ----------
 
