@@ -670,8 +670,8 @@ for i in range(10):
     batch_df = sample_trips_df.filter(f"hash(tpep_pickup_datetime) % 10 = {i}")
     (batch_df
      .write
-     .format(  )  # JSON format
-     .mode(  )  # Overwrite mode
+     .format("json")  # JSON format
+     .mode("overwrite")  # Overwrite mode
      .save(f"{working_dir}/streaming_source/batch_{i}")
     )
 
@@ -706,8 +706,8 @@ print("✅ Task 3.1 complete: Streaming source simulated")
 # cloudFiles.schemaLocation: checkpoint location for inferred schema
 
 bronze_stream_df = (spark.readStream
-    .format(  )  # CloudFiles format
-    .option("cloudFiles.format",  )  # Source file format
+    .format("cloudFiles")  # CloudFiles format
+    .option("cloudFiles.format", f"json")  # Source file format
     .option("cloudFiles.schemaLocation", f"{checkpoint_dir}/bronze_schema")
     .load(f"{working_dir}/streaming_source")
 )
@@ -718,10 +718,10 @@ bronze_stream_df.printSchema()
 # Write to Bronze Delta table
 bronze_query = (bronze_stream_df
     .writeStream
-    .format(  )  # Delta format
-    .outputMode(  )  # Append mode
+    .format("delta")  # Delta format
+    .outputMode("append")  # Append mode
     .option("checkpointLocation", f"{checkpoint_dir}/bronze")
-    .trigger(  )  # availableNow=True
+    .trigger(availableNow=True)  # availableNow=True
     .start(f"{working_dir}/bronze_taxi_trips")
 )
 
@@ -766,29 +766,29 @@ from pyspark.sql.functions import window, count, sum, avg, col, to_timestamp
 # Read Bronze stream and cast timestamp columns
 # Note: Auto Loader reads JSON timestamps as strings, so we need to cast them
 silver_stream_df = (spark.readStream
-    .format(  )  # Delta format
+    .format("delta")  # Delta format
     .load(f"{working_dir}/bronze_taxi_trips")
     .withColumn("tpep_pickup_datetime", to_timestamp(col("tpep_pickup_datetime")))
     .withColumn("tpep_dropoff_datetime", to_timestamp(col("tpep_dropoff_datetime")))
-    .withWatermark(  ,  )  # Column and watermark interval
+    .withWatermark( "tpep_pickup_datetime" , "1 hour" )  # Column and watermark interval
     .groupBy(
-        window(col(  ),  ),  # Column and window duration
-        col(  )  # Additional grouping column
+        window(col( "tpep_pickup_datetime" ), "1 hour" ),  # Column and window duration
+        col("pickup_zip")  # Additional grouping column
     )
     .agg(
         count("*").alias("trips_per_hour"),
-        sum(  ).alias("total_revenue"),  # Column to sum
-        avg(  ).alias("avg_trip_distance")  # Column to average
+        sum("fare_amount").alias("total_revenue"),  # Column to sum
+        avg("trip_distance").alias("avg_trip_distance")  # Column to average
     )
 )
 
 # Write aggregated stream (use "append" mode - required for windowed aggregations in Free Edition)
 silver_query = (silver_stream_df
     .writeStream
-    .format(  )  # Delta format
-    .outputMode(  )  # Append mode for windowed aggregations
+    .format("delta")  # Delta format
+    .outputMode("append")  # Append mode for windowed aggregations
     .option("checkpointLocation", f"{checkpoint_dir}/silver")
-    .trigger(  )  # availableNow=True
+    .trigger(availableNow=True)  # availableNow=True
     .start(f"{working_dir}/silver_hourly_metrics")
 )
 
@@ -858,7 +858,9 @@ def upsert_to_gold(batch_df, batch_id):
     spark.sql("""
         MERGE INTO nyctaxi_catalog.analytics.taxi_trips_gold AS target
         USING streaming_batch AS source
-        ON
+        ON target.tpep_pickup_datetime = source.tpep_pickup_datetime AND
+            target.pickup_zip = source.pickup_zip AND
+            target.dropoff_zip = source.dropoff_zip
         WHEN NOT MATCHED THEN
             INSERT (
                 tpep_pickup_datetime, tpep_dropoff_datetime,
@@ -875,14 +877,14 @@ def upsert_to_gold(batch_df, batch_id):
 # Apply foreachBatch to streaming pipeline
 # Note: Cast timestamps from string to timestamp type
 gold_query = (spark.readStream
-    .format(  )  # Delta format
+    .format("delta")  # Delta format
     .load(f"{working_dir}/bronze_taxi_trips")
     .withColumn("tpep_pickup_datetime", to_timestamp(col("tpep_pickup_datetime")))
     .withColumn("tpep_dropoff_datetime", to_timestamp(col("tpep_dropoff_datetime")))
     .writeStream
-    .foreachBatch(  )  # Function name for batch processing
+    .foreachBatch(upsert_to_gold)  # Function name for batch processing
     .option("checkpointLocation", f"{checkpoint_dir}/gold")
-    .trigger(  )  # availableNow=True
+    .trigger(availableNow=True)  # availableNow=True
     .start()
 )
 
