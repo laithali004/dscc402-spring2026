@@ -388,7 +388,7 @@ import numpy as np
 mlflow.set_registry_uri("databricks-uc")
 
 # Set MLflow experiment
-mlflow.set_experiment(  )  # Use mlflow_experiment_path variable
+mlflow.set_experiment(mlflow_experiment_path)  # Use mlflow_experiment_path variable
 
 # Load features as pandas DataFrame
 features_pdf = spark.read.format("delta").load(f"{working_dir}/features/taxi_features").toPandas()
@@ -402,38 +402,38 @@ y = features_pdf["fare_amount"]
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
 # Start MLflow run
-with mlflow.start_run(run_name=  ) as run:  # Use "baseline_rf_model"
+with mlflow.start_run(run_name= "baseline_rf_model") as run:  # Use "baseline_rf_model"
     # Log parameters
-    mlflow.log_param(  ,  )  # Log "feature_set" = "baseline_distance_features"
-    mlflow.log_param(  ,  )  # Log "n_estimators" = 50
-    mlflow.log_param(  ,  )  # Log "max_depth" = 10
+    mlflow.log_param( "feature_set", "baseline_distance_features"  )  # Log "feature_set" = "baseline_distance_features"
+    mlflow.log_param( "n_estimators", 50 )  # Log "n_estimators" = 50
+    mlflow.log_param( "max_depth", 10 )  # Log "max_depth" = 10
 
     # Train model
     rf_model = RandomForestRegressor(
-        n_estimators=  ,  # 50 trees
-        max_depth=  ,  # Depth of 10
+        n_estimators=  50,  # 50 trees
+        max_depth=  10,  # Depth of 10
         random_state=42
     )
-    rf_model.fit(  ,  )  # Which X and y to use?
+    rf_model.fit( X_train , y_train )  # Which X and y to use?
 
     # Make predictions
     y_pred = rf_model.predict(X_test)
 
     # Calculate metrics
-    rmse =  # np.sqrt(mean_squared_error(y_test, y_pred))
-    mae =  # mean_absolute_error(y_test, y_pred)
-    r2 =  # r2_score(y_test, y_pred)
+    rmse = np.sqrt(mean_squared_error(y_test, y_pred)) # np.sqrt(mean_squared_error(y_test, y_pred))
+    mae = mean_absolute_error(y_test, y_pred) # mean_absolute_error(y_test, y_pred)
+    r2 = r2_score(y_test, y_pred) # r2_score(y_test, y_pred)
 
     # Log metrics
-    mlflow.log_metric(  ,  )  # Log RMSE
-    mlflow.log_metric(  ,  )  # Log MAE
-    mlflow.log_metric(  ,  )  # Log R2
+    mlflow.log_metric("RMSE", rmse)  # Log RMSE
+    mlflow.log_metric( "MAE", mae )  # Log MAE
+    mlflow.log_metric(  "R2", r2 )  # Log R2
 
     # Log model
     mlflow.sklearn.log_model(
-        ,  # The model object
-        ,  # Artifact path: "model"
-        input_example=  # Example input for schema inference (e.g., X_train.head(5))
+        rf_model,  # The model object
+        "model",  # Artifact path: "model"
+        input_example= X_train.head(5) # Example input for schema inference (e.g., X_train.head(5))
     )
 
     baseline_run_id = run.info.run_id
@@ -446,7 +446,7 @@ with mlflow.start_run(run_name=  ) as run:  # Use "baseline_rf_model"
 # Verify run was logged
 baseline_run = mlflow.get_run(baseline_run_id)
 assert "feature_set" in baseline_run.data.params, "Should have logged feature_set parameter"
-assert "rmse" in baseline_run.data.metrics, "Should have logged RMSE metric"
+assert "RMSE" in baseline_run.data.metrics, "Should have logged RMSE metric"
 print("✅ Task 2.1 complete: Baseline model trained and logged to MLflow")
 
 # COMMAND ----------
@@ -458,16 +458,17 @@ print("✅ Task 2.1 complete: Baseline model trained and logged to MLflow")
 
 # COMMAND ----------
 
+# DBTITLE 1,Cell 24
 # TODO
 # Train improved model with time features and log to MLflow
 
 # Prepare enhanced features (distance + time)
 enhanced_features = [
     "trip_distance",
-    ,  # trip_duration_minutes
-    ,  # pickup_hour
-    ,  # pickup_day_of_week
-      # is_weekend
+    "trip_duration_minutes",  # trip_duration_minutes
+    "pickup_hour",  # pickup_hour
+    "pickup_day_of_week",  # pickup_day_of_week
+     "is_weekend" # is_weekend
 ]
 X_enhanced = features_pdf[enhanced_features]
 
@@ -475,35 +476,45 @@ X_enhanced = features_pdf[enhanced_features]
 X_train_enh, X_test_enh, y_train_enh, y_test_enh = train_test_split(X_enhanced, y, test_size=0.2, random_state=42)
 
 # Start MLflow run
-with mlflow.start_run(run_name=  ) as run:  # Use "enhanced_rf_model"
+with mlflow.start_run(run_name= "enhanced_rf_model" ) as run:  # Use "enhanced_rf_model"
     # TODO: Log parameters (feature_set="enhanced_with_time_features", n_estimators=100, max_depth=15)
-
+    mlflow.log_param("feature_set", "enhanced_with_time_features")
+    mlflow.log_param("n_estimators", 100)
+    mlflow.log_param("max_depth", 15)
 
 
 
     # TODO: Train RandomForestRegressor with n_estimators=100, max_depth=15, random_state=42
     rf_model_enh = RandomForestRegressor(
-        ,  # n_estimators
-        ,  # max_depth
+        n_estimators=100,  # n_estimators
+        max_depth=15,  # max_depth
         random_state=42
     )
+    rf_model_enh.fit(X_train_enh, y_train_enh)
 
 
     # TODO: Make predictions
-    y_pred_enh =
+    y_pred_enh = rf_model_enh.predict(X_test_enh)
 
     # TODO: Calculate metrics (rmse_enh, mae_enh, r2_enh)
-
+    rmse_enh = np.sqrt(mean_squared_error(y_test_enh, y_pred_enh))  
+    mae_enh = mean_absolute_error(y_test_enh, y_pred_enh)  
+    r2_enh = r2_score(y_test_enh, y_pred_enh)  
 
 
 
     # TODO: Log all metrics to MLflow
-
+    mlflow.log_metric("RMSE", rmse_enh)  
+    mlflow.log_metric("MAE", mae_enh)  
+    mlflow.log_metric("R2", r2_enh)
 
 
 
     # TODO: Log the trained model with input_example
     mlflow.sklearn.log_model(
+        rf_model_enh,  
+        "model",  
+        input_example= X_train_enh.head(5)
 
 
 
@@ -537,30 +548,30 @@ print("✅ Task 2.2 complete: Enhanced model trained and logged to MLflow")
 # Search and compare all runs in the experiment
 
 # Get experiment ID
-experiment = mlflow.get_experiment_by_name(  )  # Which experiment path?
+experiment = mlflow.get_experiment_by_name(mlflow_experiment_path)  # Which experiment path?
 
 # Search runs, ordered by RMSE (ascending = better)
 all_runs = mlflow.search_runs(
-    experiment_ids=  ,  # Use [experiment.experiment_id] as a list
-    order_by=  # Order by metrics.rmse ASC (as a list)
+    experiment_ids= [experiment.experiment_id],  # Use [experiment.experiment_id] as a list
+    order_by= ["metrics.rmse ASC"], # Order by metrics.rmse ASC (as a list)
 )
 
 # Display comparison
 print("All Runs Comparison (sorted by RMSE):")
-display(all_runs[["run_id", "params.feature_set", "metrics.rmse", "metrics.mae", "metrics.r2", "start_time"]])
+display(all_runs[["run_id", "params.feature_set", "metrics.RMSE", "metrics.MAE", "metrics.R2", "start_time"]])
 
 # Get best run
-best_run =  # First row from all_runs DataFrame (hint: .iloc[0])
+best_run = all_runs.iloc[0] # First row from all_runs DataFrame (hint: .iloc[0])
 print(f"\n🏆 Best Model:")
 print(f"  Feature Set: {best_run['params.feature_set']}")
-print(f"  RMSE: {best_run['metrics.rmse']:.2f}")
-print(f"  R2: {best_run['metrics.r2']:.4f}")
+print(f"  RMSE: {best_run['metrics.RMSE']:.2f}")
+print(f"  R2: {best_run['metrics.R2']:.4f}")
 
 # COMMAND ----------
 
 # CHECK YOUR WORK
 assert len(all_runs) >= 2, "Should have at least 2 runs logged"
-assert "metrics.rmse" in all_runs.columns, "Should have RMSE metrics"
+assert "metrics.RMSE" in all_runs.columns, "Should have RMSE metrics"
 print("✅ Task 2.3 complete: Experiments compared using MLflow")
 
 # COMMAND ----------
@@ -585,13 +596,13 @@ print("✅ Task 2.3 complete: Experiments compared using MLflow")
 model_name = f"nyctaxi_fare_predictor_{spark.sql('SELECT current_user()').collect()[0][0].split('@')[0]}"
 
 # Get best model URI
-best_model_uri = f"runs:/{  }/model"  # Use best_run['run_id']
+best_model_uri = f"runs:/{best_run['run_id']}/model"  # Use best_run['run_id']
 
 try:
     # Register model
     model_version = mlflow.register_model(
-        model_uri=  ,  # The model URI
-        name=  # The model name
+        model_uri= best_model_uri,  # The model URI
+        name=  model_name, # The model name
     )
 
     print(f"✅ Model registered: {model_name} (version {model_version.version})")
