@@ -661,8 +661,8 @@ from pyspark.sql.functions import pandas_udf, PandasUDFType
 import pandas as pd
 
 # Get the best model URI and load the model
-best_model_uri = f"runs:/{  }/model"  # Use best_run['run_id'] from Task 2.3
-loaded_model = mlflow.pyfunc.load_model(  )  # Load the model URI
+best_model_uri = f"runs:/{best_run['run_id'] }/model"  # Use best_run['run_id'] from Task 2.3
+loaded_model = mlflow.pyfunc.load_model(best_model_uri)  # Load the model URI
 
 print(f"✅ Loaded model from: {best_model_uri}")
 
@@ -678,17 +678,17 @@ def predict_fare_udf(trip_distance: pd.Series, trip_duration_minutes: pd.Series,
     # TODO: Construct feature DataFrame matching model's expected input
     # Create DataFrame with columns matching enhanced_features from Task 2.2
     features_df = pd.DataFrame({
-        :  ,  # trip_distance
-        :  ,  # trip_duration_minutes
-        :  ,  # pickup_hour
-        :  ,  # pickup_day_of_week
-        :    # is_weekend
+        "trip_distance": trip_distance,  # trip_distance
+        "trip_duration_minutes": trip_duration_minutes ,  # trip_duration_minutes
+        "pickup_hour": pickup_hour,  # pickup_hour
+        "pickup_day_of_week": pickup_day_of_week ,  # pickup_day_of_week
+        "is_weekend": is_weekend    # is_weekend
     })
 
     # TODO: Make predictions using the loaded model
-    predictions =  # Use loaded_model.predict(...)
+    predictions = loaded_model.predict(features_df) # Use loaded_model.predict(...)
 
-    return pd.Series(  )  # Return predictions as Series
+    return pd.Series(predictions)  # Return predictions as Series
 
 print("✅ Created Pandas UDF for distributed inference")
 
@@ -720,24 +720,24 @@ features_spark_df = spark.read.format("delta").load(f"{working_dir}/features/tax
 predictions_df = features_spark_df.withColumn(
     "predicted_fare",
     predict_fare_udf(
-        col(  ),  # trip_distance
-        col(  ),  # trip_duration_minutes
-        col(  ),  # pickup_hour
-        col(  ),  # pickup_day_of_week
-        col(  )   # is_weekend
+        col("trip_distance"),  # trip_distance
+        col("trip_duration_minutes"),  # trip_duration_minutes
+        col("pickup_hour"),  # pickup_hour
+        col("pickup_day_of_week"),  # pickup_day_of_week
+        col("is_weekend")   # is_weekend
     )
 )
 
 # Calculate prediction error
 predictions_df = predictions_df.withColumn(
     "prediction_error",
-    col(  ) - col(  )  # predicted - actual
+    col("predicted_fare") - col("fare_amount")  # predicted - actual
 ).withColumn(
     "absolute_error",
-    abs(col(  ))  # Absolute value of prediction_error
+    abs(col("prediction_error"))  # Absolute value of prediction_error
 ).withColumn(
     "percentage_error",
-    (col(  ) / col(  )) * 100  # (absolute_error / fare_amount) * 100
+    (col("absolute_error") / col("fare_amount" )) * 100  # (absolute_error / fare_amount) * 100
 )
 
 print(f"✅ Generated predictions for {predictions_df.count():,} trips")
@@ -768,12 +768,12 @@ from pyspark.sql.functions import mean, stddev, percentile_approx, count
 # Use aggregation functions: mean, stddev, percentile_approx, count
 
 prediction_stats = predictions_df.select(
-    mean(  ).alias(  ),  # Mean absolute error
-    stddev(  ).alias(  ),  # Std of absolute error
-    mean(  ).alias(  ),  # Mean percentage error
-    percentile_approx(  , 0.5).alias(  ),  # Median absolute error
-    percentile_approx(  , 0.95).alias(  ),  # 95th percentile
-    count(  ).alias(  )  # Total predictions
+    mean("absolute_error").alias("mean_absolute_error"),  # Mean absolute error
+    stddev("absolute_error").alias("std_absolute_error"),  # Std of absolute error
+    mean("percentage_error").alias("mean_percentage_error"),  # Mean percentage error
+    percentile_approx("absolute_error", 0.5).alias( "median_absolute_error"),  # Median absolute error
+    percentile_approx("absolute_error" , 0.95).alias("p95_absolute_error"),  # 95th percentile
+    count( "*" ).alias( "total_predictions")  # Total predictions
 ).collect()[0]
 
 print("Prediction Performance Summary:")
@@ -797,24 +797,24 @@ print(f"  Mean Percentage Error: {prediction_stats['mean_percentage_error']:.2f}
 
 # Select relevant columns for storage
 predictions_to_save = predictions_df.select(
-    ,  # tpep_pickup_datetime
-    ,  # tpep_dropoff_datetime
-    ,  # trip_distance
-    ,  # pickup_zip
-    ,  # dropoff_zip
-    ,  # fare_amount
-    ,  # predicted_fare
-    ,  # prediction_error
-    ,  # absolute_error
-      # percentage_error
+  "tpep_pickup_datetime",  # tpep_pickup_datetime
+    "tpep_dropoff_datetime",  # tpep_dropoff_datetime
+    "trip_distance",  # trip_distance
+    "pickup_zip",  # pickup_zip
+    "dropoff_zip",  # dropoff_zip
+    "fare_amount",  # fare_amount
+    "predicted_fare",  # predicted_fare
+    "prediction_error",  # prediction_error
+    "absolute_error",  # absolute_error
+    "percentage_error" # percentage_error
 )
 
 # Save to Delta
 (predictions_to_save
  .write
- .format(  )  # Delta format
- .mode(  )  # overwrite mode
- .save(  )  # Path: f"{working_dir}/predictions/fare_predictions"
+ .format("delta")  # Delta format
+ .mode("overwrite")  # overwrite mode
+ .save(f"{working_dir}/predictions/fare_predictions")  # Path: f"{working_dir}/predictions/fare_predictions"
 )
 
 print(f"✅ Predictions saved to {working_dir}/predictions/fare_predictions")
@@ -871,6 +871,6 @@ print("✅ Task 3.4 complete: Predictions saved to Delta")
 # COMMAND ----------
 
 # Optional: Clean up lab data (uncomment to execute)
-# dbutils.fs.rm(f"{working_dir}/features", recurse=True)
-# dbutils.fs.rm(f"{working_dir}/predictions", recurse=True)
-# print("✅ Lab cleanup complete")
+dbutils.fs.rm(f"{working_dir}/features", recurse=True)
+dbutils.fs.rm(f"{working_dir}/predictions", recurse=True)
+print("✅ Lab cleanup complete")
