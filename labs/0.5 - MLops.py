@@ -198,13 +198,13 @@ def extract_time_features(timestamps: pd.Series) -> pd.DataFrame:
 
     # Extract features
     return pd.DataFrame({
-        "hour":  ,  # Extract hour from dt using dt.dt.hour
-        "day_of_week":  ,  # Extract day of week using dt.dt.dayofweek
-        "is_weekend":  # Cast to int: (dt.dt.dayofweek >= 5).astype(int)
+        "hour": dt.dt.hour,   # Extract hour from dt using dt.dt.hour
+        "day_of_week": dt.dt.dayofweek,  # Extract day of week using dt.dt.dayofweek
+        "is_weekend": (dt.dt.dayofweek >= 5).astype(int) # Cast to int: (dt.dt.dayofweek >= 5).astype(int)
     })
 
 # Apply the UDF to create time features
-trips_with_time = trips_df.withColumn("time_features", extract_time_features(col(  )))  # Which column?
+trips_with_time = trips_df.withColumn("time_features", extract_time_features(col("tpep_pickup_datetime")))  # Which column?
 
 # Expand struct into individual columns
 trips_with_time = trips_with_time.select(
@@ -266,24 +266,24 @@ def calculate_trip_metrics(pickup_times: pd.Series, dropoff_times: pd.Series, di
     dropoff = pd.to_datetime(dropoff_times)
 
     # Calculate duration in minutes
-    duration_minutes =  # Hint: (dropoff - pickup).dt.total_seconds() / 60
+    duration_minutes = (dropoff - pickup).dt.total_seconds() / 60 # Hint: (dropoff - pickup).dt.total_seconds() / 60
 
     # Calculate average speed (mph) - handle division by zero
-    duration_hours =  # Convert minutes to hours
-    avg_speed =  # Use np.where(duration_hours > 0, distances / duration_hours, 0)
+    duration_hours = (duration_minutes / 60) # Convert minutes to hours
+    avg_speed = np.where(duration_hours > 0, distances / duration_hours, 0) # Use np.where(duration_hours > 0, distances / duration_hours, 0)
 
     return pd.DataFrame({
-        "trip_duration_minutes":  ,
-        "avg_speed_mph":
+        "trip_duration_minutes": duration_minutes,
+        "avg_speed_mph": avg_speed
     })
 
 # Apply the UDF to create trip metrics
 trips_with_metrics = trips_with_time.withColumn(
     "trip_metrics",
     calculate_trip_metrics(
-        col(  ),  # pickup datetime column
-        col(  ),  # dropoff datetime column
-        col(  )   # distance column
+        col("tpep_pickup_datetime"),  # pickup datetime column
+        col("tpep_dropoff_datetime"),  # dropoff datetime column
+        col("trip_distance")   # distance column
     )
 )
 
@@ -320,11 +320,11 @@ print("✅ Task 1.3 complete: Distance-based features created with Pandas UDF")
 
 # Filter out invalid records
 valid_trips = trips_with_metrics.filter(
-    (col("fare_amount") >  ) &  # Positive fares only
-    (col("trip_distance") >  ) &  # What about distance?
-    (col(  ) >  ) &  # trip_duration_minutes should be positive
-    (col(  ) >  ) &  # avg_speed_mph should be positive
-    (col("avg_speed_mph") <  )  # Remove outliers - realistic speed limit?
+    (col("fare_amount") > 0 ) &  # Positive fares only
+    (col("trip_distance") > 0 ) &  # What about distance?
+    (col("trip_duration_minutes") > 0 ) &  # trip_duration_minutes should be positive
+    (col("avg_speed_mph") > 0 ) &  # avg_speed_mph should be positive
+    (col("avg_speed_mph") < 100 )  # Remove outliers - realistic speed limit?
 )
 
 print(f"Valid trips: {valid_trips.count():,} (filtered from {trips_with_metrics.count():,})")
@@ -332,9 +332,9 @@ print(f"Valid trips: {valid_trips.count():,} (filtered from {trips_with_metrics.
 # Save to Delta
 (valid_trips
  .write
- .format(  )  # Delta format
- .mode(  )  # overwrite mode
- .save(  )  # Path: f"{working_dir}/features/taxi_features"
+ .format("delta")  # Delta format
+ .mode("overwrite")  # overwrite mode
+ .save(f"{working_dir}/features/taxi_features")  # Path: f"{working_dir}/features/taxi_features"
 )
 
 print(f"✅ Features saved to {working_dir}/features/taxi_features")
