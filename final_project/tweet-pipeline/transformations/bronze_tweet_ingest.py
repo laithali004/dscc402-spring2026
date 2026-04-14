@@ -23,12 +23,14 @@
 
 # COMMAND ----------
 
+# DBTITLE 1,Cell 2
 # TODO: Import necessary libraries
 # You will need:
 # - pyspark.pipelines (as dp)
 # - pyspark.sql.types (for schema definition)
-# - pyspark.sql.functions (for column operations)
-
+from pyspark.sql.functions import col, current_timestamp
+from pyspark.sql.types import *
+from pyspark import pipelines as dp
 
 # COMMAND ----------
 
@@ -46,8 +48,30 @@ spark.conf.set("spark.sql.legacy.timeParserPolicy", "LEGACY")
 
 # COMMAND ----------
 
-# TODO: Create streaming table definition
+# DBTITLE 1,Cell 5
+# Define source schema (JSON files)
+tweet_source_schema = StructType([
+    StructField("date", StringType(), True),
+    StructField("sentiment", StringType(), True),
+    StructField("text", StringType(), True),
+    StructField("user", StringType(), True),
+])
 
+# Define table schema (includes metadata columns)
+tweet_schema = StructType([
+    StructField("date", StringType(), True),
+    StructField("sentiment", StringType(), True),
+    StructField("text", StringType(), True),
+    StructField("user", StringType(), True),
+    StructField("source_file", StringType(), True),
+    StructField("processing_time", TimestampType(), True),
+])
+
+dp.create_streaming_table(
+    name="tweets_bronze",
+    comment="Bronze streaming table for raw tweet records",
+    schema=tweet_schema
+)
 
 # COMMAND ----------
 
@@ -65,6 +89,13 @@ spark.conf.set("spark.sql.legacy.timeParserPolicy", "LEGACY")
 # COMMAND ----------
 
 # TODO: Define tweet schema as StructType
+tweet_schema = StructType([
+    StructField("date", StringType(), True),
+    StructField("sentiment", StringType(), True),
+    StructField("text", StringType(), True),
+    StructField("user", StringType(), True),
+])
+
 
 
 # COMMAND ----------
@@ -86,8 +117,23 @@ spark.conf.set("spark.sql.legacy.timeParserPolicy", "LEGACY")
 
 # COMMAND ----------
 
+# DBTITLE 1,Cell 9
 # TODO: Define append_flow function for bronze ingestion
-
+@dp.append_flow(target="tweets_bronze")
+def tweets_bronze_flow():
+    return (
+        spark.readStream
+        .format("cloudFiles")
+        .option("cloudFiles.format", "json")
+        .schema(tweet_source_schema)
+        .load("s3://dsas-datasets/tweets/")
+        .select(
+            "*",
+            col("_metadata.file_path").cast("string").alias("source_file"),
+            current_timestamp().alias("processing_time")
+        )
+    )
+# from pyspark.sql.functions import col, current_timestamp
 
 # COMMAND ----------
 
