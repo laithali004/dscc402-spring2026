@@ -1,0 +1,66 @@
+{
+  "datasets": [
+    {
+      "name": "a858d564",
+      "displayName": "tweets_gold_aggregations",
+      "config": {
+        "version": "1.1",
+        "source": "workspace.default.tweets_gold_aggregations",
+        "dimensions": [
+          {
+            "name": "mention",
+            "expr": "source.mention",
+            "displayName": "Mention"
+          },
+          {
+            "name": "positive_count",
+            "expr": "source.positive_count",
+            "displayName": "Positive Count"
+          },
+          {
+            "name": "negative_count",
+            "expr": "source.negative_count",
+            "displayName": "Negative Count"
+          },
+          {
+            "name": "total_count",
+            "expr": "source.total_count",
+            "displayName": "Total Count"
+          },
+          {
+            "name": "earliest_timestamp",
+            "expr": "source.earliest_timestamp",
+            "displayName": "Earliest Timestamp"
+          },
+          {
+            "name": "latest_timestamp",
+            "expr": "source.latest_timestamp",
+            "displayName": "Latest Timestamp"
+          }
+        ],
+        "measures": [
+          {
+            "name": "count",
+            "expr": "COUNT(*)",
+            "comment": "Represents the total number of rows in the dataset. Use this measure to count all",
+            "displayName": "Count"
+          }
+        ]
+      }
+    }
+  ],
+  "pages": [
+    {
+      "name": "6c2429e8",
+      "displayName": "project",
+      "pageType": "PAGE_TYPE_CANVAS",
+      "layoutVersion": "GRID_V1"
+    }
+  ],
+  "uiSettings": {
+    "theme": {
+      "widgetHeaderAlignment": "ALIGNMENT_UNSPECIFIED"
+    },
+    "applyModeEnabled": false
+  }
+}
