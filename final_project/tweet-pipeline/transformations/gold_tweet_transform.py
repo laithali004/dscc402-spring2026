@@ -30,6 +30,7 @@
 
 # COMMAND ----------
 
+# DBTITLE 1,Cell 2
 # TODO: Import necessary libraries
 # You will need:
 # - pyspark.pipelines (as dp)
@@ -41,7 +42,6 @@ from pyspark.sql.types import *
 from pyspark.sql.functions import col, when
 
 import mlflow
-
 
 # COMMAND ----------
 
@@ -84,12 +84,10 @@ mlflow.set_registry_uri("databricks-uc")
 
 # COMMAND ----------
 
-# TODO: Define model output schema
 model_schema = StructType([
     StructField("label", StringType(), True),
     StructField("score", DoubleType(), True)
 ])
-
 
 # COMMAND ----------
 
@@ -104,12 +102,8 @@ model_schema = StructType([
 
 # COMMAND ----------
 
-
-
-# COMMAND ----------
-
 # TODO: Load model and create Spark UDF
-model_uri = "models:/workspace.default.tweet_sentiment_model/3"
+model_uri = "models:/workspace.default.tweet_sentiment_model/5"
 
 predict_udf = mlflow.pyfunc.spark_udf(
     spark,
@@ -145,7 +139,6 @@ predict_udf = mlflow.pyfunc.spark_udf(
 @dp.append_flow(target="tweets_gold")
 def tweets_gold_flow():
     df = spark.readStream.table("tweets_silver")
-
     return (
         df.withColumn("prediction", predict_udf(col("cleaned_text")))
           .withColumn("predicted_label", col("prediction.label"))
