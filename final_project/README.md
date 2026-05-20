@@ -195,6 +195,4 @@ Created an MLflow experiment that tracks:
 2. Calculated classification metrics using sklearn.metrics
 3. Generated confusion matrix
 4. Logged all to MLflow experiment
-5. Register experiment in Unity Catalog
-
----
+5. Registered experiment in Unity Catalog
