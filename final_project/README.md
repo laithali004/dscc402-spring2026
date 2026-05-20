@@ -1,4 +1,4 @@
-# DSCC202-402 Final Project: Tweet Sentiment Analysis Pipeline
+# Tweet Sentiment Analysis Pipeline
 
 ## Overview
 
@@ -6,25 +6,12 @@ Build a complete end-to-end data pipeline that ingests tweets, applies ML-based 
 
 **Core Technologies**: Spark Declarative Pipelines, Delta Lake, MLflow, Unity Catalog
 **Architecture**: Medallion (Bronze → Silver → Gold → Application)
-**Project Weight**: 25% of final grade
 
 ---
 
 ## Pipeline Architecture
 
 ![Tweet Pipeline Architecture](tweet%20pipeline%20architecture.jpeg)
-
----
-
-## Learning Objectives
-
-Demonstrate mastery of:
-1. Spark Declarative Pipelines for orchestrating data transformations
-2. Medallion Architecture for organizing data processing layers
-3. ML model deployment and inference at scale using Spark UDFs
-4. MLflow for experiment tracking and model performance analysis
-5. Data visualization and dashboard creation in Databricks
-6. Workflow automation with Databricks Jobs
 
 ---
 
@@ -45,8 +32,6 @@ Demonstrate mastery of:
 **Note**: Data is pre-provisioned. CloudFiles Auto Loader handles incremental ingestion. New data may be added daily - your automated job will process it.
 
 ---
-
-## Architecture Requirements
 
 ### Pipeline Flow
 ```
@@ -69,19 +54,11 @@ Dashboard + MLflow Tracking
 **Input**: JSON files from `s3://dsas-datasets/tweets/`
 **Output**: Delta table `tweets_bronze`
 
-**Required Functionality**:
+**Functionality**:
 - Incremental ingestion with CloudFiles Auto Loader
 - Schema enforcement for JSON fields (date, user, text, sentiment)
 - Metadata tracking (source_file path, processing_time timestamp)
-- Use Spark Declarative Pipelines API (`pyspark.pipelines`)
-
-**Success Criteria**:
-- ~50,000 tweets ingested
-- All source files processed
-- Metadata columns populated for all rows
-- Pipeline creates Delta table with correct schema
-
-**Reference**: See Lab 0.4 for CloudFiles Auto Loader patterns
+- Uses Spark Declarative Pipelines API (`pyspark.pipelines`)
 
 ---
 
@@ -91,22 +68,13 @@ Dashboard + MLflow Tracking
 **Input**: `tweets_bronze` Delta table (streaming)
 **Output**: Delta table `tweets_silver`
 
-**Required Functionality**:
-1. Extract all @mentions from tweet text using regex pattern `@[\w]+`
-2. Remove @mentions from text (create `cleaned_text` column)
-3. Explode mentions into individual rows (one row per mention per tweet)
-4. Parse Twitter date format to proper timestamp
-5. Normalize mentions to lowercase
-6. Preserve tweets without mentions (use appropriate explode strategy)
-
-**Success Criteria**:
-- Row count > bronze layer (due to mention explosion)
-- `cleaned_text` column has no @mentions remaining
-- Tweets without mentions preserved with mention=NULL
-- Timestamp properly parsed from Twitter date format
-- All mentions in lowercase
-
-**Reference**: See Lab 0.1 Section 9 for UDF patterns, Lab 0.1 Section 7 for explode operations
+**Functionality**:
+1. Extracts all @mentions from tweet text using regex pattern `@[\w]+`
+2. Removes @mentions from text (create `cleaned_text` column)
+3. Explodes mentions into individual rows (one row per mention per tweet)
+4. Parses Twitter date format to proper timestamp
+5. Normalizes mentions to lowercase
+6. Preserves tweets without mentions (use appropriate explode strategy)
 
 ---
 
@@ -116,22 +84,13 @@ Dashboard + MLflow Tracking
 **Input**: `tweets_silver` Delta table (streaming)
 **Output**: Delta table `tweets_gold`
 
-**Required Functionality**:
-1. Load sentiment model from Unity Catalog (`workspace.default.tweet_sentiment_model`)
-2. Create Spark UDF for distributed ML inference
-3. Apply model to `cleaned_text` column
-4. Map model output labels (LABEL_0, LABEL_1, LABEL_2) to sentiment strings (negative, neutral, positive)
-5. Extract confidence scores and scale to 0-100 range
-6. Create binary sentiment indicators for metrics (sentiment_id, predicted_sentiment_id)
-
-**Success Criteria**:
-- Row count matches silver layer
-- Predictions present for all rows
-- Confidence scores in valid range (0-100)
-- Binary IDs correctly mapped (0=negative/neutral, 1=positive)
-- Model loaded from Unity Catalog (not local file)
-
-**Reference**: See Lab 0.5 for MLflow model loading and UDF creation
+**Functionality**:
+1. Loads sentiment model from Unity Catalog (`workspace.default.tweet_sentiment_model`)
+2. Creates Spark UDF for distributed ML inference
+3. Applys model to `cleaned_text` column
+4. Maps model output labels (LABEL_0, LABEL_1, LABEL_2) to sentiment strings (negative, neutral, positive)
+5. Extracts confidence scores and scale to 0-100 range
+6. Creates binary sentiment indicators for metrics (sentiment_id, predicted_sentiment_id)
 
 ---
 
@@ -141,23 +100,15 @@ Dashboard + MLflow Tracking
 **Input**: `tweets_gold` Delta table
 **Output**: Materialized view `gold_tweet_aggregations`
 
-**Required Functionality**:
-1. Aggregate by `mention` (lowercased username)
-2. Calculate metrics per mention:
+**Functionality**:
+1. Aggregates by `mention` (lowercased username)
+2. Calculates metrics per mention:
    - Count of positive mentions
    - Count of negative mentions
    - Total mentions (positive + negative, excluding neutral)
    - Min and max timestamp (for tracking mention timeline)
-3. Filter out NULL mentions
-4. Sort by total mentions descending
-
-**Success Criteria**:
-- Aggregations mathematically correct
-- View auto-refreshes when underlying gold table updates
-- Sorted by total mentions (most mentioned users first)
-- NULL mentions excluded from results
-
-**Reference**: See Lab 0.1 Section 5 for aggregation patterns
+3. Filters out NULL mentions
+4. Sorts by total mentions descending
 
 ---
 
@@ -203,9 +154,7 @@ Dashboard + MLflow Tracking
 
 ---
 
-## Dashboard Requirements
-
-Create a Databricks dashboard with the following visualizations:
+## Dashboard 
 
 1. **Total Tweets Counter** - Count of all tweets from bronze layer
 2. **Tweets with Mentions Counter** - Count from silver WHERE mention IS NOT NULL
@@ -214,221 +163,39 @@ Create a Databricks dashboard with the following visualizations:
 5. **Top 10 Most Positively Mentioned** - Bar chart (green), from application layer
 6. **Top 10 Most Negatively Mentioned** - Bar chart (red), from application layer
 
-**Deliverable**: Export dashboard as JSON and include in your repository submission.
-
 ---
 
-## Databricks Job Requirements
+## Databricks Job 
 
-Configure an automated Databricks Job with:
+Configured an automated Databricks Job with:
 
-**Task 1: Run Pipeline**
-- Type: Notebook job or DLT pipeline
-- Notebook/Pipeline: Your tweet sentiment pipeline
+**Run Pipeline**
+- Type: DLT pipeline
+- Notebook/Pipeline: Tweet sentiment pipeline
 - Schedule: Daily at 2:00 AM UTC
 
-**Task 2: Refresh Dashboard** (depends on Task 1)
+**Refresh Dashboard** 
 - Type: Refresh dashboard task
 - Dashboard: Your tweet analytics dashboard
 - Runs after Task 1 completes successfully
 
 **Notifications**: Configure email alerts on failure
 
-**Deliverable**: Screenshot or JSON export of job configuration showing task dependencies and schedule.
-
 ---
 
 ## Model Performance Analysis
 
-Create an MLflow experiment that tracks:
+Created an MLflow experiment that tracks:
 - **Parameters**: Model name, version, data path
 - **Metrics**: Classification report (precision, recall, F1 for each class)
 - **Artifacts**: Confusion matrix visualization
 
-**Required Analysis**:
-1. Load `tweets_gold` with ground truth (`sentiment_id`) and predictions (`predicted_sentiment_id`)
-2. Calculate classification metrics using sklearn.metrics
-3. Generate confusion matrix
-4. Log all to MLflow experiment
+**Analysis**:
+1. Loaded `tweets_gold` with ground truth (`sentiment_id`) and predictions (`predicted_sentiment_id`)
+2. Calculated classification metrics using sklearn.metrics
+3. Generated confusion matrix
+4. Logged all to MLflow experiment
 5. Register experiment in Unity Catalog
-
-**Success Criteria**:
-- MLflow experiment contains all required metrics
-- Confusion matrix artifact viewable in UI
-- Binary classification metrics correctly calculated
-- Experiment registered and discoverable in Unity Catalog
-
-**Reference**: See Lab 0.5 for MLflow experiment tracking patterns
-
----
-
-## Implementation Approach
-
-Your pipeline should follow this development workflow:
-
-1. **Setup** (Run utility notebook)
-   - Install dependencies
-   - Load and register sentiment model in Unity Catalog
-   - Verify model is accessible
-
-2. **Implement Layers** (Use Spark Declarative Pipelines)
-   - Bronze: CloudFiles streaming ingestion
-   - Silver: UDF-based text processing and explode
-   - Gold: Model loading and Spark UDF for inference
-   - Application: SQL aggregations as materialized view
-
-3. **Validate** (Check outputs)
-   - Verify row counts at each layer
-   - Sample data to verify transformations
-   - Check dashboard visualizations match data
-
-4. **Automate** (Configure job)
-   - Create daily scheduled job
-   - Set up task dependencies
-   - Test job execution
-
-5. **Analyze** (MLflow tracking)
-   - Generate classification metrics
-   - Log to MLflow experiment
-   - Review model performance
-
----
-
-## Grading Rubric (50 points total)
-
-### Pipeline Execution (7 points)
-- **3 pts**: Pipeline runs end-to-end without errors
-- **2 pts**: All Delta tables created with correct schemas
-- **2 pts**: Performance analysis notebook completes successfully
-
-### Bronze Layer (8 points)
-- **2 pts**: CloudFiles Auto Loader correctly configured
-- **2 pts**: Schema enforcement implemented (4 required JSON fields)
-- **2 pts**: Metadata columns present and populated
-- **2 pts**: ~50,000 rows ingested successfully
-
-### Silver Layer (10 points)
-- **3 pts**: @mention extraction works correctly (regex pattern)
-- **2 pts**: Text cleaning removes mentions from cleaned_text
-- **2 pts**: Explode creates individual rows per mention
-- **2 pts**: Date parsing converts Twitter format to timestamp
-- **1 pt**: Row count > bronze due to mention explosion
-
-### Gold Layer (12 points)
-- **3 pts**: Model successfully loaded from Unity Catalog
-- **3 pts**: Spark UDF applies predictions to all rows
-- **2 pts**: Label mapping correct (LABEL_X → sentiment string)
-- **2 pts**: Binary sentiment IDs created correctly
-- **2 pts**: All required output columns present
-
-### Application Layer (5 points)
-- **1 pt**: Materialized view created
-- **2 pts**: Aggregations filtered correctly (positive/negative counts)
-- **2 pts**: Grouping by mention and sorting by total correct
-
-### Model Performance Analysis (3 points)
-- **1 pt**: Classification report generated and logged
-- **1 pt**: Confusion matrix artifact created
-- **1 pt**: MLflow experiment complete with all parameters/metrics
-
-### Dashboard (2 points)
-- **1 pt**: All 6 required visualizations present and functional
-- **1 pt**: Dashboard JSON exported and included in submission
-
-### Automated Job (3 points)
-- **1 pt**: Job configured with pipeline task
-- **1 pt**: Dashboard refresh task with dependency on pipeline task
-- **1 pt**: Daily schedule (2 AM UTC) configured correctly
-
-### Graduate Students Only (DSCC-402): +3 points
-
-**Additional Requirement**: Spark Performance Optimization Analysis
-
-Submit a 1-2 page document analyzing pipeline performance and proposing optimizations. Address at least 3 of the following:
-- **Spill**: Analyze shuffle spill in aggregations, propose partition tuning
-- **Skew**: Identify data skew in groupBy operations, recommend strategies
-- **Shuffle**: Measure shuffle read/write, suggest repartition strategies
-- **Storage**: Evaluate Delta table file sizes, recommend OPTIMIZE/ZORDER
-- **Serialization**: Analyze UDF serialization overhead, propose alternatives
-
-**Include**: Spark UI screenshots showing metrics and specific optimization recommendations with expected impact.
-
----
-
-## Submission Requirements
-
-Submit via GitHub repository with the following structure:
-```
-final_project/
-├── tweet-pipeline/
-│   ├── utilities/
-│   │   └── Run me first.ipynb (provided)
-│   ├── transformations/
-│   │   ├── bronze_tweet_ingest.py (YOUR IMPLEMENTATION)
-│   │   ├── silver_tweet_transform.py (YOUR IMPLEMENTATION)
-│   │   ├── gold_tweet_transform.py (YOUR IMPLEMENTATION)
-│   │   └── gold_tweet_aggregations.sql (YOUR IMPLEMENTATION)
-│   ├── explorations/
-│   │   └── Sentiment Model Performance Analysis.py (YOUR IMPLEMENTATION)
-│   └── _dashboards/
-│       └── tweet_analytics_dashboard.json (YOUR EXPORT)
-├── job_configuration.json (or screenshot)
-└── performance_analysis.pdf (DSCC-402 only)
-```
-
----
-
-## Common Issues & Troubleshooting
-
-### CloudFiles Checkpoint Already Exists
-**Error**: "Path already exists: ..."
-**Solution**: Use unique checkpoint locations per pipeline run or delete old checkpoints before rerunning
-
-### Model Not Found in Unity Catalog
-**Error**: "Model 'workspace.default.tweet_sentiment_model' not found"
-**Solution**: Verify you ran the setup utility notebook that registers the model
-
-### Mention Explosion Missing Rows
-**Error**: Tweets without mentions disappear after explode
-**Solution**: Use `explode_outer()` instead of `explode()` to preserve null mentions
-
-### Date Parsing Fails
-**Error**: "Invalid format: 'Mon Apr 06 22:19:49 PDT 2009'"
-**Solution**: Enable legacy time parser: `spark.conf.set("spark.sql.legacy.timeParserPolicy", "LEGACY")`
-
-### UDF Serialization Error
-**Error**: "Task not serializable"
-**Solution**: Ensure model is loaded inside UDF function, not in outer scope
-
-### Dashboard Not Refreshing
-**Issue**: Dashboard shows stale data
-**Solution**: Refresh materialized view manually or configure auto-refresh on view
-
----
-
-## Resources
-
-- **Lab 0.1**: UDF creation, array operations (explode), aggregations
-- **Lab 0.3**: Streaming operations, triggers, checkpoints
-- **Lab 0.4**: CloudFiles Auto Loader, Delta Lake, schema evolution
-- **Lab 0.5**: MLflow model loading, Spark UDFs for ML inference
-- **Spark Declarative Pipelines Docs**: https://docs.databricks.com/en/delta-live-tables/python-ref.html
-- **MLflow Unity Catalog**: https://docs.databricks.com/en/mlflow/models-in-uc.html
-
----
-
-## Getting Started
-
-1. **Run the setup utility**: `final_project/tweet-pipeline/utilities/Run me first.ipynb`
-2. **Implement Bronze layer**: Start with CloudFiles ingestion
-3. **Build Silver layer**: Extract mentions and clean text
-4. **Add Gold layer**: Load model and apply predictions
-5. **Create Application layer**: Aggregate metrics
-6. **Analyze performance**: MLflow experiment tracking
-7. **Build dashboard**: 6 required visualizations
-8. **Automate**: Configure Databricks Job
-
-**Estimated Time**: 8-12 hours total
 
 ---
 
