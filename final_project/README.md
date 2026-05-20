@@ -198,5 +198,3 @@ Created an MLflow experiment that tracks:
 5. Register experiment in Unity Catalog
 
 ---
-
-Good luck! Remember: This project tests your ability to apply Spark, Delta Lake, and MLflow concepts from labs to a real-world scenario. Focus on understanding the architecture and data flow - the implementation patterns are all in your lab materials.
